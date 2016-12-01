@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="20" failures="0" disabled="0" errors="0" timestamp="2016-11-15T15:55:39" time="0.137" name="AllTests">
+  <testsuite name="ObjectTest" tests="1" failures="0" disabled="0" errors="0" time="0.1">
+    <testcase name="TimingSendTest" status="run" time="0.1" classname="ObjectTest" />
+  </testsuite>
+  <testsuite name="TOBJECT/ObjectTest" tests="19" failures="0" disabled="0" errors="0" time="0.033">
+    <testcase name="SendAndGetTest/0" value_param="1" status="run" time="0.001" classname="TOBJECT/ObjectTest" />
+    <testcase name="SendAndGetTest/1" value_param="2" status="run" time="0.001" classname="TOBJECT/ObjectTest" />
+    <testcase name="SendAndGetTest/2" value_param="3" status="run" time="0.001" classname="TOBJECT/ObjectTest" />
+    <testcase name="SendAndGetTest/3" value_param="4" status="run" time="0.001" classname="TOBJECT/ObjectTest" />
+    <testcase name="SendAndGetTest/4" value_param="5" status="run" time="0.001" classname="TOBJECT/ObjectTest" />
+    <testcase name="SendAndGetTest/5" value_param="6" status="run" time="0.001" classname="TOBJECT/ObjectTest" />
+    <testcase name="SendAndGetTest/6" value_param="7" status="run" time="0" classname="TOBJECT/ObjectTest" />
+    <testcase name="SendAndGetTest/7" value_param="8" status="run" time="0.003" classname="TOBJECT/ObjectTest" />
+    <testcase name="SendAndGetTest/8" value_param="9" status="run" time="0.001" classname="TOBJECT/ObjectTest" />
+    <testcase name="SendAndGetTest/9" value_param="10" status="run" time="0.001" classname="TOBJECT/ObjectTest" />
+    <testcase name="SendAndGetTest/10" value_param="11" status="run" time="0.001" classname="TOBJECT/ObjectTest" />
+    <testcase name="SendAndGetTest/11" value_param="12" status="run" time="0.001" classname="TOBJECT/ObjectTest" />
+    <testcase name="SendAndGetTest/12" value_param="13" status="run" time="0.001" classname="TOBJECT/ObjectTest" />
+    <testcase name="SendAndGetTest/13" value_param="14" status="run" time="0.002" classname="TOBJECT/ObjectTest" />
+    <testcase name="SendAndGetTest/14" value_param="15" status="run" time="0.002" classname="TOBJECT/ObjectTest" />
+    <testcase name="SendAndGetTest/15" value_param="16" status="run" time="0.001" classname="TOBJECT/ObjectTest" />
+    <testcase name="SendAndGetTest/16" value_param="17" status="run" time="0.001" classname="TOBJECT/ObjectTest" />
+    <testcase name="SendAndGetTest/17" value_param="18" status="run" time="0.003" classname="TOBJECT/ObjectTest" />
+    <testcase name="SendAndGetTest/18" value_param="19" status="run" time="0.001" classname="TOBJECT/ObjectTest" />
+  </testsuite>
+</testsuites>
