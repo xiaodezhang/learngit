@@ -1,0 +1,68 @@
+#include"..\kernel\cknl.h"
+#include"gtest\gtest.h"
+
+#define OBJECTTESTTIMES 10
+
+typedef struct{
+    COBJ_HANDLE_LOOPTHREAD_DEF(1,1);
+    i4 data;
+}TESTOBJECT;
+
+
+class ObjectTest : public ::testing::Test,
+    public ::testing::WithParamInterface<int>{
+
+protected:
+    virtual void SetUp(){
+        printf("start testing object\n");
+        Init(sendobj,0,&g_testPara[0],sendmessage);
+    }
+public:
+    u1 Init(TESTOBJECT*,u4,const CTHREADPARAM*,CCBFUNC);
+private:
+    u1 sendmessage(CMSG*);
+    u1 getmessage(CMSG*);
+    const CTHREADPARAM g_testPara[3] = {
+        15,0,2048,0,
+        11,0,2048,0,
+        10,0,2048,0
+    };
+    TESTOBJECT *sendobj;
+    TESTOBJECT *getobj;
+};
+
+u1 ObjectTest::sendmessage(CMSG* pmsg){
+
+    return 0;
+}
+
+u1 ObjectTest::getmessage(CMSG* pmsg){
+
+    return 0;
+}
+
+u1 ObjectTest::Init(TESTOBJECT* obj,u4 id,const CTHREADPARAM* threadparam,
+        CCBFUNC pfun){
+
+    obj = (TESTOBJECT*)cmem_alloc(sizeof(TESTOBJECT));
+//    ASSERT_TRUE(obj);
+    MyObj_Init(obj,id);
+    MyLoopThread_Init(obj,threadparam);
+    MyHandler_Init_MyThread(obj,0,id,pfun);
+    MyHandler_InsertSys(obj,0);
+    tgtHandler_Init(obj,0);
+    obj->data = 0;
+
+    return 0;
+}
+
+
+TEST_P(ObjectTest,SendAndGetTest){
+
+    int param;
+
+    param = GetParam();
+}
+
+INSTANTIATE_TEST_CASE_P(TOBJECT,ObjectTest,
+        ::testing::Range(1,OBJECTTESTTIMES));

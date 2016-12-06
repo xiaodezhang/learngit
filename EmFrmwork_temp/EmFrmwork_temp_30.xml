@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="9" failures="8" disabled="0" errors="0" timestamp="2016-11-16T14:15:53" time="45.02" name="AllTests">
+  <testsuite name="TTIMER/TimerTest" tests="9" failures="8" disabled="0" errors="0" time="45.018">
+    <testcase name="timeTest/0" value_param="1000" status="run" time="1" classname="TTIMER/TimerTest" />
+    <testcase name="timeTest/1" value_param="2000" status="run" time="2" classname="TTIMER/TimerTest">
+      <failure message="testcase\ttimer.cpp:37&#x0A;Value of: labs(stoptime-STARTTIME) &lt; CHECKDIFF&#x0A;  Actual: false&#x0A;Expected: true" type=""><![CDATA[testcase\ttimer.cpp:37
+Value of: labs(stoptime-STARTTIME) < CHECKDIFF
+  Actual: false
+Expected: true]]></failure>
+    </testcase>
+    <testcase name="timeTest/2" value_param="3000" status="run" time="3" classname="TTIMER/TimerTest">
+      <failure message="testcase\ttimer.cpp:37&#x0A;Value of: labs(stoptime-STARTTIME) &lt; CHECKDIFF&#x0A;  Actual: false&#x0A;Expected: true" type=""><![CDATA[testcase\ttimer.cpp:37
+Value of: labs(stoptime-STARTTIME) < CHECKDIFF
+  Actual: false
+Expected: true]]></failure>
+    </testcase>
+    <testcase name="timeTest/3" value_param="4000" status="run" time="4.002" classname="TTIMER/TimerTest">
+      <failure message="testcase\ttimer.cpp:37&#x0A;Value of: labs(stoptime-STARTTIME) &lt; CHECKDIFF&#x0A;  Actual: false&#x0A;Expected: true" type=""><![CDATA[testcase\ttimer.cpp:37
+Value of: labs(stoptime-STARTTIME) < CHECKDIFF
+  Actual: false
+Expected: true]]></failure>
+    </testcase>
+    <testcase name="timeTest/4" value_param="5000" status="run" time="5" classname="TTIMER/TimerTest">
+      <failure message="testcase\ttimer.cpp:37&#x0A;Value of: labs(stoptime-STARTTIME) &lt; CHECKDIFF&#x0A;  Actual: false&#x0A;Expected: true" type=""><![CDATA[testcase\ttimer.cpp:37
+Value of: labs(stoptime-STARTTIME) < CHECKDIFF
+  Actual: false
+Expected: true]]></failure>
+    </testcase>
+    <testcase name="timeTest/5" value_param="6000" status="run" time="5.999" classname="TTIMER/TimerTest">
+      <failure message="testcase\ttimer.cpp:37&#x0A;Value of: labs(stoptime-STARTTIME) &lt; CHECKDIFF&#x0A;  Actual: false&#x0A;Expected: true" type=""><![CDATA[testcase\ttimer.cpp:37
+Value of: labs(stoptime-STARTTIME) < CHECKDIFF
+  Actual: false
+Expected: true]]></failure>
+    </testcase>
+    <testcase name="timeTest/6" value_param="7000" status="run" time="7.001" classname="TTIMER/TimerTest">
+      <failure message="testcase\ttimer.cpp:37&#x0A;Value of: labs(stoptime-STARTTIME) &lt; CHECKDIFF&#x0A;  Actual: false&#x0A;Expected: true" type=""><![CDATA[testcase\ttimer.cpp:37
+Value of: labs(stoptime-STARTTIME) < CHECKDIFF
+  Actual: false
+Expected: true]]></failure>
+    </testcase>
+    <testcase name="timeTest/7" value_param="8000" status="run" time="7.999" classname="TTIMER/TimerTest">
+      <failure message="testcase\ttimer.cpp:37&#x0A;Value of: labs(stoptime-STARTTIME) &lt; CHECKDIFF&#x0A;  Actual: false&#x0A;Expected: true" type=""><![CDATA[testcase\ttimer.cpp:37
+Value of: labs(stoptime-STARTTIME) < CHECKDIFF
+  Actual: false
+Expected: true]]></failure>
+    </testcase>
+    <testcase name="timeTest/8" value_param="9000" status="run" time="9.001" classname="TTIMER/TimerTest">
+      <failure message="testcase\ttimer.cpp:37&#x0A;Value of: labs(stoptime-STARTTIME) &lt; CHECKDIFF&#x0A;  Actual: false&#x0A;Expected: true" type=""><![CDATA[testcase\ttimer.cpp:37
+Value of: labs(stoptime-STARTTIME) < CHECKDIFF
+  Actual: false
+Expected: true]]></failure>
+    </testcase>
+  </testsuite>
+</testsuites>

@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="10" failures="6" disabled="0" errors="0" timestamp="2016-11-15T15:48:47" time="0.023" name="AllTests">
+  <testsuite name="CmemDeathTest" tests="1" failures="1" disabled="0" errors="0" time="0.01">
+    <testcase name="NegativeTest" status="run" time="0.01" classname="CmemDeathTest">
+      <failure message="testcase\tmem.cpp:32&#x0A;Death test: cmem_alloc(-1)&#x0A;    Result: failed to die.&#x0A; Error msg:&#x0A;[  DEATH   ] " type=""><![CDATA[testcase\tmem.cpp:32
+Death test: cmem_alloc(-1)
+    Result: failed to die.
+ Error msg:
+[  DEATH   ] ]]></failure>
+    </testcase>
+  </testsuite>
+  <testsuite name="Tmem/CmemTest" tests="9" failures="5" disabled="0" errors="0" time="0.012">
+    <testcase name="AllocTest/0" value_param="1024" status="run" time="0" classname="Tmem/CmemTest" />
+    <testcase name="AllocTest/1" value_param="2048" status="run" time="0" classname="Tmem/CmemTest" />
+    <testcase name="AllocTest/2" value_param="3072" status="run" time="0" classname="Tmem/CmemTest">
+      <failure message="testcase\tmem.cpp:22&#x0A;      Expected: memsize&#x0A;      Which is: 3072&#x0A;To be equal to: cmem_GetUsedMem()&#x0A;      Which is: 4096" type=""><![CDATA[testcase\tmem.cpp:22
+      Expected: memsize
+      Which is: 3072
+To be equal to: cmem_GetUsedMem()
+      Which is: 4096]]></failure>
+    </testcase>
+    <testcase name="AllocTest/3" value_param="4096" status="run" time="0" classname="Tmem/CmemTest" />
+    <testcase name="AllocTest/4" value_param="5120" status="run" time="0.001" classname="Tmem/CmemTest">
+      <failure message="testcase\tmem.cpp:22&#x0A;      Expected: memsize&#x0A;      Which is: 5120&#x0A;To be equal to: cmem_GetUsedMem()&#x0A;      Which is: 8192" type=""><![CDATA[testcase\tmem.cpp:22
+      Expected: memsize
+      Which is: 5120
+To be equal to: cmem_GetUsedMem()
+      Which is: 8192]]></failure>
+    </testcase>
+    <testcase name="AllocTest/5" value_param="6144" status="run" time="0.001" classname="Tmem/CmemTest">
+      <failure message="testcase\tmem.cpp:22&#x0A;      Expected: memsize&#x0A;      Which is: 6144&#x0A;To be equal to: cmem_GetUsedMem()&#x0A;      Which is: 8192" type=""><![CDATA[testcase\tmem.cpp:22
+      Expected: memsize
+      Which is: 6144
+To be equal to: cmem_GetUsedMem()
+      Which is: 8192]]></failure>
+    </testcase>
+    <testcase name="AllocTest/6" value_param="7168" status="run" time="0.001" classname="Tmem/CmemTest">
+      <failure message="testcase\tmem.cpp:22&#x0A;      Expected: memsize&#x0A;      Which is: 7168&#x0A;To be equal to: cmem_GetUsedMem()&#x0A;      Which is: 8192" type=""><![CDATA[testcase\tmem.cpp:22
+      Expected: memsize
+      Which is: 7168
+To be equal to: cmem_GetUsedMem()
+      Which is: 8192]]></failure>
+    </testcase>
+    <testcase name="AllocTest/7" value_param="8192" status="run" time="0" classname="Tmem/CmemTest" />
+    <testcase name="AllocTest/8" value_param="9216" status="run" time="0" classname="Tmem/CmemTest">
+      <failure message="testcase\tmem.cpp:22&#x0A;      Expected: memsize&#x0A;      Which is: 9216&#x0A;To be equal to: cmem_GetUsedMem()&#x0A;      Which is: 16384" type=""><![CDATA[testcase\tmem.cpp:22
+      Expected: memsize
+      Which is: 9216
+To be equal to: cmem_GetUsedMem()
+      Which is: 16384]]></failure>
+    </testcase>
+  </testsuite>
+</testsuites>

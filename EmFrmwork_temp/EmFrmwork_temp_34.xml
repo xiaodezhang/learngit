@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="10" failures="0" disabled="0" errors="0" timestamp="2016-11-16T14:38:39" time="46.005" name="AllTests">
+  <testsuite name="TimerTest" tests="1" failures="0" disabled="0" errors="0" time="1">
+    <testcase name="RunTest" status="run" time="1" classname="TimerTest" />
+  </testsuite>
+  <testsuite name="TTIMER/TimerTest" tests="9" failures="0" disabled="0" errors="0" time="45.003">
+    <testcase name="OneShotTimeTest/0" value_param="1000" status="run" time="1" classname="TTIMER/TimerTest" />
+    <testcase name="OneShotTimeTest/1" value_param="2000" status="run" time="2" classname="TTIMER/TimerTest" />
+    <testcase name="OneShotTimeTest/2" value_param="3000" status="run" time="3.001" classname="TTIMER/TimerTest" />
+    <testcase name="OneShotTimeTest/3" value_param="4000" status="run" time="4" classname="TTIMER/TimerTest" />
+    <testcase name="OneShotTimeTest/4" value_param="5000" status="run" time="5" classname="TTIMER/TimerTest" />
+    <testcase name="OneShotTimeTest/5" value_param="6000" status="run" time="6" classname="TTIMER/TimerTest" />
+    <testcase name="OneShotTimeTest/6" value_param="7000" status="run" time="7" classname="TTIMER/TimerTest" />
+    <testcase name="OneShotTimeTest/7" value_param="8000" status="run" time="7.999" classname="TTIMER/TimerTest" />
+    <testcase name="OneShotTimeTest/8" value_param="9000" status="run" time="9.001" classname="TTIMER/TimerTest" />
+  </testsuite>
+</testsuites>
