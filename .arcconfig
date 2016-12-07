@@ -1,3 +1,4 @@
 {
- "phabricator.uri" : "https://phabricator.example.com/"
+ "project_id" : "test",
+ "conduit_uri" : "https://phabricator.example.com/"
 }
