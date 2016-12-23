@@ -1,0 +1,1566 @@
+// General_Decode.c : 用于实现通用的解码程序
+//
+
+#define __GENERAL_DECODE__
+
+#include"General_Decode.h"
+#include <string.h>
+#include <stdio.h>
+#include <math.h>
+#include <malloc.h>
+#include <stddef.h>
+
+u1 CRC8(u1 *q, u2 len,u1 crc)
+{
+	while (len--)
+        crc = CRC8Table[crc^*q++];
+    return crc;
+}
+
+
+//============================================================================
+/// Function: CRC16
+/// writer and date : wangchao
+//===========================================================================
+u2 CRC16(u1 *q, u2 len,u2 crc)
+{
+	while (len--)
+	crc = ccitt_table[(crc >> 8 ^ *q++) & 0xff] ^ (crc << 8);
+	return crc;
+} 
+
+
+/*-----------------------------------------------------------------------------
+* args   : unsigned char *buff I data
+*          int    len    I      data length (bytes)
+* return : crc-24Q parity
+* notes  : see reference [2] A.4.3.3 Parity
+*-----------------------------------------------------------------------------*/
+u4 CRC24(u1 *buff, u4 len,u4 crc)
+{
+        
+	while (len--)
+	{
+	crc=((crc<<8)&0xFFFFFF)^tbl_CRC24Q[(crc>>16)^*buff++];
+	}
+    return crc;
+}
+
+
+//============================================================================
+/// Function: CRC32Value
+/// writer and date : cc 110822
+//============================================================================
+u4 CRC32Value(i4 i)
+{
+	i4 j;
+	u4 ulCRC;
+	ulCRC = i;
+	for ( j = 8 ; j > 0; j-- )
+	{
+		if ( ulCRC & 1 )
+			ulCRC = ( ulCRC >> 1 ) ^ CRC32_POLYNOMIAL;
+		else
+			ulCRC >>= 1;
+	}
+	return ulCRC;
+}
+//============================================================================
+/// Function: CRC32
+/// writer and date : cc 110822
+//============================================================================
+u4 CRC32(u1 *ucBuffer, u4 ulCount, u4 ulCRC)
+{
+	u4 ulTemp1;
+	u4 ulTemp2;
+	while ( ulCount-- != 0 )
+	{
+		ulTemp1 = ( ulCRC >> 8 ) & 0x00FFFFFF;
+		ulTemp2 = CRC32Value( ((int) ulCRC ^ *ucBuffer++ ) & 0xff );
+		ulCRC = ulTemp1 ^ ulTemp2;
+	}
+	return( ulCRC );
+}
+
+//============================================================================
+/// Function: IsEqualStr
+///  字符串比对函数
+/// 循环判断注册函数ID ,并将协议转换为二进制协议
+//   并调用二进制处理函数
+/// writer and date : wangchao 20140710
+//============================================================================
+
+bool IsEqualStr(INT8U* strA, INT8U* strB, INT16U LEN, INT8U IgnoreChar)
+{
+	while(LEN)
+	{
+	   if (*strA!=*strB&&!((*strB==IgnoreChar)&&IgnoreChar))
+	   {
+	   	return false;
+	   }
+	   strA++;
+	   strB++;
+	   LEN--;
+	}
+
+	return true;
+}
+//============================================================================
+/// Function: Str2Dec
+///  从字符串中读取十进制数据
+/// writer and date : wangchao 20140710
+//============================================================================
+bool Str2Double(INT16U LEN, INT8U* strA, f8* result)
+{
+    INT8U tmp;
+    INT8U state=0;	
+    INT8S signdata=1;
+    INT8S tmpCnt=0;
+	
+    f8 expdata=0;	
+    f8 tmpdata=0;
+    //
+    expdata=0;
+	
+	if(LEN==0)
+	{
+		*result=0;
+		return true;
+	}
+	
+	while(LEN)
+	{
+             tmp=*strA;
+		if(('0' <= tmp) && (tmp <= '9'))
+		{
+		    tmpdata = tmpdata*10+(tmp - 0x30);
+		    if(state==1)
+		    {
+		       expdata-=1;
+		    }
+		}
+		else if(tmp=='.'&&state==0)
+		{//状态切换
+			state=1;
+		}
+		else if(tmp=='e'||tmp=='E')
+		{
+			state=2;//状态切换
+			*result=tmpdata*signdata;
+			tmpCnt=-1;//+1后为0
+			tmpdata=0;
+			signdata=1;
+		}
+		else if((tmpCnt==0)&&(tmp=='+'||tmp=='-'))
+		{
+			signdata=(tmp=='-')?-1:1;
+		}
+		else
+		{
+			*result=0;
+			expdata=0;
+			return false;
+		}
+	   tmpCnt++;	
+	   strA++;
+	   LEN--;
+	}
+	if(state<2)
+	{ //结束后赋值
+		*result=tmpdata*signdata*pow(10.0,expdata);
+	}
+	else
+	{  //state>=2时结束后赋值
+		expdata+=tmpdata*signdata;
+		*result*=pow(10.0,expdata);
+	}
+	return true;
+}
+
+//============================================================================
+/// Function: Str2Dec
+///  从字符串中读取十进制数据
+/// 注意直接数据不能大于2^32
+/// writer and date : wangchao 20140710
+//============================================================================
+bool Str2Dec(INT16U LEN, INT8U* strA, INT32S* result, INT32S* expdata)
+{
+    INT8U tmp;
+    INT8U state=0;	
+    INT8S signdata=1;
+    INT8S tmpCnt=0;	
+    INT32S tmpdata=0;
+
+	
+      *expdata=0;
+
+	if(LEN==0)
+	{
+		*result=0;
+		return true;
+	}
+	  
+	while(LEN)
+	{
+             tmp=*strA;
+		if(('0' <= tmp) && (tmp <= '9'))
+		{
+		    tmpdata = tmpdata*10+(tmp - 0x30);
+		    if(state==1)
+		    {
+		       *expdata-=1;
+		    }
+		}
+		else if(tmp=='.'&&state==0)
+		{//状态切换
+			state=1;
+		}
+		else if(tmp=='e'||tmp=='E')
+		{
+			state=2;//状态切换
+			*result=tmpdata*signdata;
+			tmpCnt=-1;//+1后为0
+			tmpdata=0;
+			signdata=1;
+		}
+		else if((tmpCnt==0)&&(tmp=='+'||tmp=='-'))
+		{
+			signdata=(tmp=='-')?-1:1;
+		}
+		else
+		{
+			*result=0;
+			*expdata=0;
+			return false;
+		}
+	   tmpCnt++;	
+	   strA++;
+	   LEN--;
+	}
+	if(state<2)
+	{ //结束后赋值
+		*result=tmpdata*signdata;
+	}
+	else
+	{  //state>=2时结束后赋值
+		*expdata+=tmpdata*signdata;
+	}
+	return true;
+}
+//============================================================================
+/// Function: Char2Hex
+///  从字符中读取十六进制数据
+/// writer and date : wangchao 20150831
+//============================================================================
+INT8U Char2Hex(INT8U Data)
+{
+	
+	if(Data>='0'&&Data<='9')
+	{
+		return (Data-48);
+	}
+	else if(Data>='A'&&Data<='F')
+	{
+		return (Data-65+10);
+	}
+	else if(Data>='a'&&Data<='f')
+	{
+		return (Data-97+10);
+	}	
+	return 0;
+}
+
+
+
+
+
+//============================================================================
+/// Function: ASCIICodeDetect
+/// 判断ASCII 码类型
+//  返回值0非法字符 1 非打印字符  2数字3 小写字母4大写字母 5其他 符号
+/// writer and date : wangchao 20140707
+//============================================================================
+
+u1  ASCIICodeDetect(u1 data)
+{
+   if(data>127)
+     {return ILLEGAL_CHAR;} //非法字符
+   else if(data<32)
+   	{return NON_PRINTING_CHAR;} //非打印字符
+   else if(data>=48&&data<=57)
+   	{return DIGIT_CHAR;} //非打印字符
+   else if(data>=65&&data<=90)
+   	{return BIG_LETTER;} //大写字母
+    else if(data>=97&&data<=122)
+   	{return SMALL_LETTER;} //小写字母
+    else
+	{return OTHER_SYMBOL;} //其他字符
+}
+
+bool IsCharVaild(char data)
+{
+	u1 chartype=ASCIICodeDetect((u1)data);
+	return (chartype==BIG_LETTER||chartype==SMALL_LETTER||chartype==DIGIT_CHAR||chartype==OTHER_SYMBOL);
+}
+
+bool IsCharDelimiter(char data,char* DelimiterList,u1 Len)
+{
+	while(Len--)
+	{
+		if(data==*DelimiterList++)
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+
+//============================================================================
+/// Function: DecSignCommon
+/// 计算二进制有符号数或二进制补码数 分为两个函数处理
+/// writer and date : wangchao 20140710
+//============================================================================
+
+i4 DecSignExt(u4 arg, u2 bitNum)
+{
+	i4 result;
+
+	if(bitNum >= 32)
+  	{
+    		result = arg;
+  	}
+	else if(bitNum<=0)
+  	{
+    		result = arg;
+  	}		
+	else if(bitNum==1)
+  	{
+    		result = chkBit(arg, 0)?-1:1;
+  	}	
+  	else
+  	{
+    		result = __SXT32(arg,bitNum);
+  	}
+  	return result;
+}
+
+
+i4 DecSignMagnitude(u4 arg, u2 bitNum)
+{
+	i4 result;
+	i4 data_sign; 
+	if(bitNum >32)
+  	{
+    		result = arg;
+  	}
+	else if(bitNum<=0)
+ 	{
+    		result = 0;
+  	}	
+	else if(bitNum==1)
+  	{
+    		result = chkBit(arg, 0)?-1:1;
+  	}		
+  	else
+  	{
+  		data_sign=chkBit(arg, bitNum-1)?-1:1;
+    		result =getMutiBit(arg,0,bitNum-1);
+		result*=data_sign;
+  	}
+  	return result;
+}
+
+//二进制扩展通用类型
+i4 DecSignCommon(u4 arg, u2 bitNum, u1 Flag)
+{
+	switch(Flag)
+	{
+		case ComplementCode:
+			return DecSignExt(arg,bitNum);				
+		case SignMagnitudeCode:
+			return DecSignMagnitude(arg,bitNum);		
+		case NoSignedCode:
+		default:		
+			return arg;				
+	}
+}
+
+
+//============================================================================
+/// Function: GeneralDecode_addPara
+/// 从Bit数据中获取大端数据或小端数据
+/// 大端数据 字节0的低位做高位和字节1的高位做低位组合
+/// 小端数据 字节0的高位做低位和字节1的低位做高位组合
+/// Signflag 0 有符号补码  1有符号幅度码
+/// writer and date : wangchao 20140710
+//============================================================================
+/*
+bool GeneralDecode_CreateParaGroup(GeneralPro_Para* pDecodePara,u1 ParaNum)
+{
+	if(MaxParaGroupNum<m_currentParaIndex+ParaNum)
+	{return false;}
+	pDecodePara->hSubPara=&m_ParaList[m_currentParaIndex];
+	pDecodePara->ParaNum=ParaNum;
+	m_currentParaIndex+=ParaNum;
+	return true;
+}
+*/
+
+//============================================================================
+/// Function: GetSrtEnum
+/// 根据之前注册的数据类型中
+/// 获取字符串中的枚举数据值
+/// writer and date : wangchao 20140710
+//============================================================================
+
+bool GetSrtEnum(u1* strA,u4 LEN, i4* result)
+{
+	GeneralAsciiParaTBL* ptemp;
+	*result=0;	
+	ptemp=(GeneralAsciiParaTBL*)GetStringHashItem(&m_AsciiParaHashTbl,strA,LEN,0);//首先区分大小写查找
+	if(!ptemp)
+	{
+		ptemp=(GeneralAsciiParaTBL*)GetStringHashItem(&m_AsciiParaHashTbl,strA,LEN,1);//再进行不区分大小写查找
+		if(!ptemp)
+		{return false;}
+	}
+	*result=ptemp->ENUMDATA;
+	return true;
+}
+
+//============================================================================
+/// Function: GeneralPara_CreateSubGroup
+/// 一个参数创建一组子参数
+/// writer and date : wangchao 20160615
+//============================================================================
+bool CreateStrEnum(u1* strA,i4 Emun,u1 CaseInsensitive)
+{
+	u2 i;
+	GeneralAsciiParaTBL temp;
+	temp.BYTELEN=0;
+	temp.ENUMDATA=Emun;
+	
+	for(i=0;i<MaxAsciiParLen;i++)
+	{
+		temp.BYTE[i]=*strA;
+		temp.BYTELEN++;
+		if(*strA==0) {break;}
+		strA++;
+	}
+	return SetStringHashItem(&m_AsciiParaHashTbl,temp.BYTE,temp.BYTELEN,CaseInsensitive,(u1*)&temp);
+}
+
+
+//============================================================================
+/// Function: GeneralPara_CreateSubGroup
+/// 一个参数创建一组子参数
+/// writer and date : wangchao 20160615
+//============================================================================
+
+bool GeneralPara_CreateSubGroup(GeneralPara* pPara,u1 ParaNum)
+{
+	if(MaxParaGroupNum<m_currentParaIndex+ParaNum)
+	{return false;}
+	pPara->hSubPara=&m_ParaList[m_currentParaIndex];
+	pPara->SubParaNum=ParaNum;
+	m_currentParaIndex+=ParaNum;
+	return true;
+}
+
+//============================================================================
+/// Function: GeneralPara_addPara
+/// 创建一个解码参数 
+/// 如果该参数没有主参数则从参数表中获取地址，如果有主参数则从主参数的子参数分区中获取
+/// writer and date : wangchao 20160615
+//============================================================================
+GeneralPara* GeneralPara_addPara(GeneralPara* pMasterPara,u4 ParaID,u1 Index,u1 Format,u1 DecodeFormat,u1 EndianMode, u2 datasize,u2 Len,i2 GroupNum, f8 ParaCoef)
+{
+	//u1 i;
+	GeneralPara* pPara;
+	if(pMasterPara==(GeneralPara*)null)
+	{
+		pPara=&m_ParaList[m_currentParaIndex];
+		m_currentParaIndex++;
+	}
+	else if(Index<pMasterPara->SubParaNum)
+	{pPara=pMasterPara->hSubPara+Index;}		
+	else
+	{return null;}
+	
+	if(Len>MaxFrmLen||datasize>MaxFrmLen)
+	{
+		return null;
+	}
+	/*
+	memset(pPara->Name,0,MaxNameStrLen);
+	for(i=0;i<MaxNameStrLen;i++)
+	{
+		pPara->Name[i]=name[i];
+		if(name[i]=='\0')
+		 {break;}		
+	}*/
+	pPara->ParaID=ParaID;
+	pPara->Format=Format;
+	pPara->DecodeFormat=DecodeFormat;
+	pPara->EndianMode=EndianMode;
+	/*if(datasize==0)
+	{
+		switch(Format)
+		{
+			case I1:
+				pPara->datasize=1;				
+			case I2:
+				pPara->datasize=2;				
+			case I4:
+			case F4:	
+			case BE:
+			case BM:
+			case E4:				
+				pPara->datasize=4;
+				break;
+			case F8:	
+				pPara->datasize=8;
+				break;	
+			case S:					
+			default:
+				pPara->datasize=Len;
+				break;	
+		}
+	}
+	else*/
+
+	{pPara->datasize=datasize;}
+	pPara->Len=Len;
+	pPara->GroupNum=GroupNum;
+	pPara->GroupNum=(pPara->GroupNum==0)?1:pPara->GroupNum;
+	pPara->actualGroupNum=(pPara->GroupNum>0)?pPara->GroupNum:0;
+	pPara->hSubPara=null;
+	pPara->hMaterPara=pMasterPara;
+	pPara->SubParaNum=0;
+	pPara->ParaCoef=ParaCoef;	
+	pPara->Offset=0;
+	return pPara;
+}
+
+//============================================================================
+/// Function: AddParaAndFunc_byMsgID
+/// 在一个MsgID下面增加一组解码参数和处理函数 
+/// writer and date : wangchao 20160615
+//============================================================================
+
+
+bool AddParaAndFunc_byMsgID(u4 MsgID,GeneralPara* pPara,void* Epara,void* pfunc, u1 DecodeFlag)
+{
+	GeneralMsgPara  tempMsgPara;
+	tempMsgPara.MsgID=MsgID;
+	tempMsgPara.hPara=pPara;
+	tempMsgPara.EPara=Epara;
+	tempMsgPara.DecodeFlag=DecodeFlag;
+	tempMsgPara.pFUNC=(i4 (*)(u4,void*,GeneralPro_output*))pfunc;
+	
+	return SetParaByMsgTBL(MsgID,&tempMsgPara);			
+}
+
+/*
+GeneralPara* Get_GeneralPara_byName(char* Name)
+{
+	u2 i;
+	GeneralPara* pPara;
+	for(i=0;i<MaxNameStrLen;i++)
+	{
+		pPara->Name[i]=name[i];
+		if(name[i]=='\0')
+		 {break;}		
+	}	
+}
+*/
+
+//============================================================================
+/// Function: GetBitData
+/// 从Bit数据中获取大端数据或小端数据
+/// 大端数据 字节0的低位做高位和字节1的高位做低位组合
+/// 小端数据 字节0的高位做低位和字节1的低位做高位组合
+/// Signflag 0 有符号补码  1有符号幅度码
+/// writer and date : wangchao 20140710
+//============================================================================
+
+
+
+i4 GetBitData(u1* pdata, u1 Len,u1 Startbit,u1 EndianMode,u1 Signflag)
+{
+	i4 tempresult=0;
+	u1 i;
+	/*u1 endbit;
+	u1 bitLen;
+	u1 tempdata;
+	u1 RemainLen=Len;*/	
+	u1 Tempdata[5];
+	u1 ByteLen;
+	i1 ShiftBit;
+	u1 tempLen;
+	//Startbit=(EndianMode==FRMENDIAN_BIGEND)?7-Startbit: Startbit;
+	tempLen=(Len+Startbit);
+	ByteLen=(tempLen>>3)+(tempLen%8!=0);	
+	memset(Tempdata,0,5);
+	if(EndianMode==FRMENDIAN_BIGEND)
+	{//大端高bit位在低字节 低bit位在高字节  0字节|----0111| 1字节|0000----|表示 0x70
+		for(i=0;i<ByteLen;i++)
+		{
+			Tempdata[ByteLen-1-i]=*pdata++;
+		}
+		ShiftBit=8-tempLen%8;
+		if(ShiftBit==8){ShiftBit=0;}
+//		ShiftBit=(ShiftBit<0)?(ShiftBit%8)+8:ShiftBit;
+		/*while(RemainLen)
+		{
+			if(RemainLen>Startbit)
+			{
+				endbit=0;
+			}	
+			else
+			{
+				endbit=Startbit-RemainLen;
+			}
+			bitLen=Startbit-endbit+1;			
+			Startbit=7; 			
+			RemainLen-=bitLen;
+			tempdata=((*pdata)>>endbit)&((1<<bitLen)-1);
+			tempresult=(tempresult<<bitLen)|tempdata;
+			pdata++;			
+		}*/
+		
+	}
+	else
+	{//小端低bit位在低字节 高bit位在高字节  1字节|----0111| 0字节|0000----|表示 0x70 
+		/*while(RemainLen)
+		{
+			if(RemainLen>7-Startbit)
+			{
+				endbit=7;
+			}	
+			else
+			{
+				endbit=Startbit+RemainLen;
+			}
+			bitLen=endbit-Startbit+1;			
+			Startbit=0; 			
+			RemainLen-=bitLen;
+			tempdata=((*pdata)>>Startbit)&((1<<bitLen)-1);
+			tempresult=tempresult|(tempdata<<(Len-RemainLen));
+			pdata++;			
+		}*/
+		memmove(Tempdata,pdata,ByteLen);
+		ShiftBit=Startbit;		
+	}
+	tempresult=*(u4*)Tempdata;
+	tempresult=((tempresult>>ShiftBit)|(Tempdata[4]>>ShiftBit))&((1<<Len)-1);
+	tempresult=DecSignCommon(tempresult,Len,Signflag);
+	return tempresult;
+}
+
+
+
+
+ //============================================================================
+ /// Function: GetRawDataInBinPro
+ /// 从二进制数据中获取原始数据
+ /// pPara 表示入口的主结构体参数, pBuf为主结构体的首地址,pdata为输出数据地址 
+ /// pOffsetIndex为从主结构体开始的多级子参数序列，pGroupIndex为每个子参数的数组索引
+ /// searchnum为索引级数，如A.B[n1].C[n2].D 该值为4 其中A为第一级子参数
+ /// BitOffset为输入时pbuf的bit偏差，在数据为bit型时可能本结构体头不是第0bit,而是在BitOffset的位置
+ /// datasize 为外部pdata的数据大小，用于比较数据是否空间足够，如果外部空间不足则返回错误
+ /// writer and date : wangchao 20160616
+ //============================================================================
+
+ //地址计算公式  A.B[n1].C[n2].D
+ //字节型 : Addr		 =Off_A+(Off_B+Len_B*n1)+(Off_C+Len_C*n2)+Off_D;
+ //Bit型  : BitOffset	 =Off_A+(Off_B+Len_B*n1)+(Off_C+Len_C*n2)+Off_D; 从帧头开始的绝对bit地址
+ ///		ByteAddr	 =BitOffset>>3;  BitAddr=BitOffset&0x7;
+ ///混合型: A/B为字节型,C/D为Bit型
+ ///		BitOffset	 =(Off_A+(Off_B+Len_B*n1))*8+(Off_C+Len_C*n2)+Off_D; 从帧头开始的绝对bit地址
+ ///		ByteAddr	 =BitOffset>>3;  BitAddr=BitOffset&0x7;
+
+ static __inline i4 GetDataInBinPro_simple(u1* pBuf,u1* pdata,u2 Bitoffset, u2 Len,u2 datasize,u1 Format,u1 EndianMode)
+ {
+	 u1 signFlag,i;
+	 i4 tempdata;
+	 memset(pdata,0,datasize);	 
+	 if(Format==BE||Format==BM||Format==UB)
+	 {//对二进制bit模式进行处理
+		 if(datasize<sizeof(i4))
+		 {return ERR_NO_ENOUGH_DATASIZE;}	 
+		 signFlag=(Format==UB)? NoSignedCode:(Format==BM)?SignMagnitudeCode : ComplementCode;
+		 tempdata=GetBitData(pBuf+(Bitoffset>>3),(u1)Len,(u1)(Bitoffset&0x7),EndianMode,signFlag);
+		 memmove(pdata,&tempdata,datasize);  
+	 }
+	 else
+	 {
+		 if(datasize<Len)
+		 {return ERR_NO_ENOUGH_DATASIZE;}
+	 
+		 if(EndianMode==FRMENDIAN_BIGEND)
+		 {
+			 pBuf+=(Bitoffset>>3)+Len-1;
+			 for(i=0;i<Len;i++)
+			 {*pdata++=*pBuf--;}			 
+		 }
+		 else
+		 {memmove(pdata,pBuf+(Bitoffset>>3),Len);}
+	 }	 
+	 return NO_ERR;
+ }
+
+
+ i4  GetRawDataInBinPro(GeneralPara* pPara,u1* pBuf, u1*pdata,u2* pOffsetIndex, u2* pGroupIndex,u1 searchnum,u1 BitOffset,u2 datasize)
+{
+	u1 signFlag=0;
+	u1 bitFlag=0; //当某一级出现bit
+	u1 Format=pPara->Format;
+	u1 i=0;	
+	i4 tempdata=0;	
+	u4 tempBitOffset=BitOffset;
+	u2 tempIndex=0;
+	//GeneralPara* pSubPara;
+	//Format=pPara->Format;
+	//bitFlag=(Format==BE||Format==BM)?1:0;
+	//for(i=0;i<searchnum;i++)
+	while(1)
+	{
+		if(pPara==null)
+		{
+			return ERR_SERCHNUM_OVERFLOW;
+		}
+		Format=pPara->Format;
+		bitFlag=(Format==BE||Format==BM||Format==UB||Format==BS)?1:0;	
+		tempIndex=(i!=0)?pPara->Offset:0;		
+		if(pPara->GroupNum!=1)		
+		{
+			if(*pGroupIndex>=pPara->actualGroupNum)
+			{
+				return ERR_GROUPINDEX_OVERFLOW;
+			}		
+			tempIndex=(pPara->Len==0)?tempIndex+GetUncertainOffset(pPara->UcertainIndex+*pGroupIndex) : tempIndex+pPara->Len*(*pGroupIndex);
+			pGroupIndex++;
+		}
+		tempBitOffset+=(bitFlag)? tempIndex : (tempIndex<<3);
+		if(++i>searchnum){break;}//在此处退出
+		
+		if(*pOffsetIndex>=pPara->SubParaNum)
+		{
+			return ERR_OFFSETINDEX_OVERFLOW;
+		}
+		pPara=pPara->hSubPara+*pOffsetIndex;	
+		pOffsetIndex++;
+		
+	}
+	return GetDataInBinPro_simple(pBuf,pdata,tempBitOffset,pPara->Len,datasize,Format,pPara->EndianMode); 
+}
+
+/*
+//============================================================================
+/// Function: GetRawDataInPro
+/// 从协议数据中获取原始数据
+/// writer and date : wangchao 20140707
+//============================================================================
+bool  GetRawDataInPro(GeneralPara* pPara,GeneralPro_BUF* pPRO, u1 GroupIndex)
+{
+	u1 result;
+	if(pDecodePara->FrmMode)
+	{
+		//result= GetRawDataInAsciiPro(Index,pDecodePara->hSubPara[Index].Format,(u1)pPRO->nParaLen[Index],pPRO,pdata);
+		result=false;
+	}
+	else
+	{
+		result= GetRawDataInBinPro(Index,GroupIndex,datasize,pDecodePara,pPRO,pdata);	
+	}
+	return result;
+}
+*/
+
+//============================================================================
+/// Function: GetDataInPro
+/// 从协议数据中获取数据,将原始数据乘以系数后可得
+/// writer and date : wangchao 20140707
+/// 输出数据类型只包含 i4 f4 f8 stuct几种
+//============================================================================
+
+i4  GetDataInPro(GeneralPara* pPara,u1* pBuf, u1*pdata,u2* pOffsetIndex, u2* pGroupIndex,u1 searchnum,u1 BitOffset,u2 datasize,u1 asciiFlag)
+{
+	u1 err;
+	u1 tempu1;
+	i1 tempi1;
+	u2 tempu2;
+	i2 tempi2;	
+	u2 Len;
+	u4 tempu4;
+	i4 tempi4;
+	f4 tempf4;
+	f8 tempf8;
+	f8 tempCoef;	
+	Len=datasize;
+	if(pPara->DecodeFormat==NO)
+	{//数据不输出
+		return 0;
+	}
+	else if((pPara->Format!=SR)&&(pPara->Format!=ST)&&(asciiFlag||pPara->ParaCoef!=0))
+	{
+		tempCoef=(pPara->ParaCoef==0)?1:pPara->ParaCoef;
+		switch(pPara->Format)
+		{
+			case U1:
+				err=GetRawDataInBinPro(pPara,pBuf,(u1*)&tempu1,pOffsetIndex,pGroupIndex,searchnum,BitOffset,sizeof(tempu1));
+				tempf8=tempu1*tempCoef;
+				break;
+			case I1:				
+				err=GetRawDataInBinPro(pPara,pBuf,(u1*)&tempi1,pOffsetIndex,pGroupIndex,searchnum,BitOffset,sizeof(tempi1));
+				tempf8=tempi1*tempCoef;
+				break;
+			case I2:
+				err=GetRawDataInBinPro(pPara,pBuf,(u1*)&tempi2,pOffsetIndex,pGroupIndex,searchnum,BitOffset,sizeof(tempi2));
+				tempf8=tempi2*tempCoef;
+				break;				
+			case U2:				
+				err=GetRawDataInBinPro(pPara,pBuf,(u1*)&tempu2,pOffsetIndex,pGroupIndex,searchnum,BitOffset,sizeof(tempu2));
+				tempf8=tempu2*tempCoef;
+				break;				
+			case BM:
+			case BE:				
+			case I4:
+			case E4:				
+				err=GetRawDataInBinPro(pPara,pBuf,(u1*)&tempi4,pOffsetIndex,pGroupIndex,searchnum,BitOffset,sizeof(tempi4));
+				tempf8=tempi4*tempCoef;
+				break;								
+			case U4:				
+			case UB:				
+				err=GetRawDataInBinPro(pPara,pBuf,(u1*)&tempu4,pOffsetIndex,pGroupIndex,searchnum,BitOffset,sizeof(tempu4));
+				tempf8=tempu4*tempCoef;
+				break;				
+			break;							
+			case F4:		
+				err=GetRawDataInBinPro(pPara,pBuf,(u1*)&tempf4,pOffsetIndex,pGroupIndex,searchnum,BitOffset,sizeof(tempf4));
+				tempf8=(tempf4*tempCoef);
+				break;		
+			case F8:	
+				err=GetRawDataInBinPro(pPara,pBuf,(u1*)&tempf8,pOffsetIndex,pGroupIndex,searchnum,BitOffset,sizeof(tempf8));
+				tempf8*=tempCoef;
+				break;	
+			default:
+				{return ERR_INVALIDFORMAT;}
+			break;	
+		}
+		if(err){return err;}
+		switch(pPara->DecodeFormat)
+		{
+			case U1:
+				tempu1=(u1)tempf8;
+				if(asciiFlag)
+				{Len=sprintf(pdata,"%d, ",tempu1);}
+				else
+				{memmove(pdata,&tempu1,1);}	
+				break;			
+			case I1:
+				tempi1=(i1)tempf8;
+				if(asciiFlag)
+				{Len=sprintf(pdata,"%d, ",tempi1);}
+				else
+				{memmove(pdata,&tempi1,1);}	
+				break;	
+			case U2:
+				tempu2=(u2)tempf8;
+				if(asciiFlag)
+				{Len=sprintf(pdata,"%d, ",tempu2);}
+				else
+				{memmove(pdata,&tempu2,2);}
+				break;					
+			case I2:
+				tempi2=(i2)tempf8;
+				if(asciiFlag)
+				{Len=sprintf(pdata,"%d, ",tempi2);}
+				else
+				{memmove(pdata,&tempi2,2);}
+				break;	
+			case U4:
+				tempu4=(u4)tempf8;
+				if(asciiFlag)
+				{Len=sprintf(pdata,"%d, ",tempu4);}
+				else				
+				{memmove(pdata,&tempu4,4);} 						
+				break;							
+			case I4:
+				tempi4=(i4)tempf8;
+				if(asciiFlag)
+				{Len=sprintf(pdata,"%d, ",tempi4);}
+				else				
+				{memmove(pdata,&tempi4,4);}							
+				break;							
+			case F4:		
+				tempf4=(f4)tempf8;
+				if(asciiFlag)
+				{Len=sprintf(pdata,"%.4f, ",tempf4);}
+				else				
+				{memmove(pdata,&tempf4,4);}
+				break;		
+			case F8:	
+				if(asciiFlag)
+				{Len=sprintf(pdata,"%.8f, ",tempf8);}
+				else				
+				{memmove(pdata,&tempf8,8);}
+				break;	
+			default:
+				{memset(pdata,0,datasize);}
+			break;	
+		}
+	}
+	else
+	{	
+		err=GetRawDataInBinPro(pPara,pBuf,pdata,pOffsetIndex,pGroupIndex,searchnum,BitOffset,datasize);
+		if(err){return err;}	
+		if(asciiFlag)
+		{Len+=sprintf(pdata+datasize,", ");}
+	}
+	return Len;
+}
+
+
+
+//============================================================================
+/// Function: GeneralProASCII2BIN
+/// 从协议数据中获取多组数据并输出到数据指针中
+/// writer and date : wangchao 20140707
+//============================================================================
+i4 GeneralProASCII2BIN(GeneralPara* pPara,u1* pBuf, u1* pdata, u2* pParaOffset, u2* pParaLen , u2 ParaNum, u2 Offset, u2 FirstFlag)
+{
+	u2 validFlag;
+	u2 i,j;
+	u2 valid_paranum;	
+	u2 tempdatasize;	
+	u2 origenParaNum;
+	i4 tempGroupNum;
+	u4 actualGroupNum;	
+	i4  result; //输出结果 包括 (高16位valid_paranum|低16位tempdatasize)
+	i4  tmpexpdata;	
+	i4  tmpdata;
+	f4  tmpdataf4;
+	f8  tmpdataf8;      	
+	u1* pDecodebuff;
+	GeneralPara* pSubPara;
+	valid_paranum=0;
+	pDecodebuff=pdata+Offset;
+	tempdatasize=0;
+	origenParaNum=ParaNum;
+	if(FirstFlag)
+	{
+		pPara->Offset=Offset;
+		if(pPara->Len==0&&pPara->Format!=SR)
+		{
+			pPara->UcertainIndex=GetUncertainIndex(pPara->actualGroupNum);
+		}
+	}	
+	for(i=0;i<pPara->actualGroupNum;i++)
+	{
+	if(pPara->Format==ST)
+	{//对结构体重新递归处理
+		for(j=0;j<pPara->SubParaNum;j++)
+		{
+			pSubPara=pPara->hSubPara+j;
+
+			if(pSubPara->GroupNum<0)
+			{
+				tmpdata=0;
+				tempGroupNum=-pSubPara->GroupNum;
+				result=GetRawDataInBinPro(pPara,pDecodebuff,(u1*)&actualGroupNum,(u2*)&tempGroupNum,(u2*)&tmpdata,1,0,sizeof(actualGroupNum));
+				//result=-1;
+				if(result<0)
+				{return result;}
+				pSubPara->actualGroupNum=actualGroupNum;
+			}
+			
+			result=GeneralProASCII2BIN(pSubPara,pBuf,pDecodebuff,pParaOffset+valid_paranum,pParaLen+valid_paranum,ParaNum,tempdatasize,(i==0));
+			if(result<0)
+			{return result;}
+			tempdatasize+=result&0xffff;
+			valid_paranum+=(result>>16)&0xffff; 	
+			ParaNum=origenParaNum-valid_paranum;
+			if(ParaNum<=0)
+			{return (valid_paranum<<16)|tempdatasize;}
+		}					
+	}
+	else
+	{
+		switch(pPara->Format)
+		{
+			case E4:
+				validFlag=GetSrtEnum(pBuf+*pParaOffset,*pParaLen,&tmpdata);
+				memmove(pDecodebuff,&tmpdata,pPara->datasize);
+				pDecodebuff+=pPara->datasize;
+				break;
+			case I1:
+			case I2:
+			case I4:				
+				validFlag=(Str2Dec(*pParaLen,pBuf+*pParaOffset,&tmpdata,&tmpexpdata));
+				tmpdataf8=(f8)tmpdata*pow(10.0,tmpexpdata);
+				tmpdata=(i4)tmpdataf8;
+				memmove(pDecodebuff,&tmpdata,pPara->datasize);
+				pDecodebuff+=pPara->datasize;	
+				break;					
+			case F4:		
+				validFlag=(Str2Double(*pParaLen,pBuf+*pParaOffset,&tmpdataf8));
+				tmpdataf4=(f4)tmpdataf8;
+				memmove(pDecodebuff,&tmpdataf4,pPara->datasize);
+				pDecodebuff+=pPara->datasize;	
+				break;		
+			case F8:	
+				validFlag=(Str2Double(*pParaLen,pBuf+*pParaOffset,&tmpdataf8));
+				memmove(pDecodebuff,&tmpdataf8,pPara->datasize);
+				pDecodebuff+=pPara->datasize;	
+				break;	
+			case SR:
+				memmove(pDecodebuff,pBuf+*pParaOffset,*pParaLen);
+				pDecodebuff+=*pParaLen;
+				pPara->datasize=*pParaLen;
+				pPara->Len=*pParaLen;
+				validFlag=1;
+				break;	
+			default:
+				return ERR_INVALIDFORMAT;
+		}
+		tempdatasize+=(pPara->Format==SR)?*pParaLen: pPara->datasize;								
+		if(validFlag)
+		{
+			valid_paranum++;
+			pParaOffset++;
+			pParaLen++;
+			ParaNum--;
+		}		
+		if(ParaNum==0)
+		{
+			return (valid_paranum<<16)|tempdatasize;
+		}
+	}
+		if(pPara->Len==0)
+		{
+			{SetUncertainOffset(pPara->UcertainIndex+i,tempdatasize);}
+		}	
+	}
+	return (valid_paranum<<16)|tempdatasize;
+}
+
+
+//============================================================================
+/// Function: GeneralASCIIProGetPara
+/// 从ASCII码协议包中提取参数
+/// 包括 对独立分隔符(如逗号)和非独立分隔符(如空格)的处理
+/// writer and date : wangchao 20160607
+//============================================================================
+
+i4 GeneralASCIIProGetPara(GeneralPro_BUF* pPRO, GeneralPro_Para* pDecodePara)
+{
+	u1 chartype;	
+	u1 LastDelimiterDFlag; //用于表示上一个非独立分隔符是否有效
+	u1 tempFlag;
+	u2 i;  	
+	u2 validParaBeginIndex,validParaEndIndex;//当前有效的数据起始和结束地址
+	//每个字节处理
+	validParaBeginIndex=0;
+	validParaEndIndex=0;
+	LastDelimiterDFlag=0;	
+	pPRO->nParaNum=0;
+	for(i=0;i<pPRO->nLEN;i++)
+	{
+		if(pPRO->nParaNum>=MaxParaNum)
+		{return ERR_TOO_MANY_ASCII_PARANUM;}
+		chartype=ASCIICodeDetect(pPRO->nBuf[i]);
+		/*if(chartype==SMALL_LETTER)
+		{
+		    pPRO->nBuf[i]-=LETTER_DIST;
+		    chartype=BIG_LETTER;
+		}*/
+		tempFlag=IsCharDelimiter(pPRO->nBuf[i],pDecodePara->DelimiterD,MAX_DELIMITER_NUM);
+		tempFlag|=IsCharDelimiter(pPRO->nBuf[i],pDecodePara->DelimiterI,MAX_DELIMITER_NUM)<<1;
+		tempFlag|=(pPRO->nBuf[i]==pDecodePara->FrmTail[0])<<2;
+		tempFlag|=(pPRO->nBuf[i]==pDecodePara->CheckFlag)<<3;
+		if(!tempFlag)
+		{//如果是常规字符
+			if(LastDelimiterDFlag)
+			{
+				pPRO->nParaLen[pPRO->nParaNum]=validParaEndIndex-validParaBeginIndex;
+				pPRO->nParaOffset[pPRO->nParaNum++]=validParaBeginIndex;
+				validParaBeginIndex=i;
+			}
+			validParaEndIndex=i+1;
+			LastDelimiterDFlag=0;
+		}
+		else if(chkBit(tempFlag,0))
+		{//如果是非独立分隔符
+			if(validParaEndIndex==validParaBeginIndex)
+			{
+				validParaBeginIndex=i+1;
+				validParaEndIndex=i+1;				
+			}
+			else
+			{
+				LastDelimiterDFlag=1;
+			}
+		}
+		else if(chkBit(tempFlag,1)||chkBit(tempFlag,2)||chkBit(tempFlag,3))
+		{//如果是独立分隔符或帧尾标记
+			LastDelimiterDFlag=0;
+			pPRO->nParaLen[pPRO->nParaNum]=validParaEndIndex-validParaBeginIndex;
+			pPRO->nParaOffset[pPRO->nParaNum++]=validParaBeginIndex;
+			validParaBeginIndex=i+1;
+			validParaEndIndex=i+1;
+			if(chkBit(tempFlag,2))	
+			{
+				break;
+			}			
+		}
+	}
+	return NO_ERR;
+}
+
+//============================================================================
+/// Function: GeneralProASCII2Bin
+/// 将ASCII码协议转化为二进制协议
+/// writer and date : wangchao 20160607
+//============================================================================
+/*
+void GeneralProASCII2Bin(GeneralPro_BUF* pPRO, GeneralPro_Para* pDecodePara)
+{
+	//GeneralPro_BUF* tempPro;
+	;
+}
+*/
+//============================================================================
+/// Function: GeneralParaTraversal
+/// 遍历某个参数下的所有数值并输出
+/// writer and date : wangchao 20160607
+//============================================================================
+
+i4 GeneralParaTraversal(GeneralPara* pPara,u1*pBuf, u1*pdata, u1 BitOffset ,u1 asciiflag)
+{
+	u1 Format;
+	u2 i,j;
+	u2 tempdatasize=0;
+	u2 tempLen;
+	u4 tempOffset;
+	GeneralPara* pSubPara;
+	for(i=0;i<pPara->actualGroupNum;i++)
+	{
+	if(pPara->SubParaNum==0)
+	{
+		tempLen=GetDataInPro(pPara,pBuf,pdata+tempdatasize,null,&i,0,BitOffset,pPara->datasize,asciiflag);
+		if(tempLen<0)
+		{return tempLen;}
+		tempdatasize+=tempLen;
+	}
+	else
+	{
+		for(j=0;j<pPara->SubParaNum;j++)
+		{
+			pSubPara=pPara->hSubPara+j;
+			Format=pPara->Format;			
+			tempOffset=(pPara->Len==0)?GetUncertainOffset(pPara->UcertainIndex+i) : pPara->Len*i;	
+			//tempOffset=pSubPara->Offset;
+			tempOffset=BitOffset+((Format==BS)?tempOffset:(tempOffset<<3));	
+			Format=pSubPara->Format;						
+			tempOffset+=((Format==BM||Format==BE||Format==UB)?pSubPara->Offset:(pSubPara->Offset<<3));	
+			tempLen=GeneralParaTraversal(pSubPara,pBuf+(tempOffset>>3),pdata+tempdatasize,(u1)(tempOffset&0x7),asciiflag);
+			if(tempLen<0)
+			{return tempLen;}
+			tempdatasize+=tempLen;						
+		}
+	}
+	}
+	return tempdatasize;	
+}
+
+//============================================================================
+/// Function: GeneralAsciiProDecode
+/// 从Ascii码协议中进行解码
+/// writer and date : wangchao 20160607
+//============================================================================
+GeneralPro_output GeneralAsciiProDecode(GeneralPro_BUF* pPRO, GeneralMsgPara* pMsgPara)
+{
+	u2 tempLen;
+	i4 result;
+	GeneralPro_output OutputPro;
+	//利用原始数据buff后面的地址(最大不能超过8192)
+	OutputPro.MsgID=pMsgPara->MsgID;
+	OutputPro.hPara=pMsgPara->hPara;
+	OutputPro.pOrigenBuf=pPRO->nBuf;
+
+	tempLen=pPRO->nOffset+4; 
+	tempLen-=tempLen%4; 
+	OutputPro.pDecodeBuf=&pPRO->nBuf[tempLen];
+	result=GeneralProASCII2BIN(pMsgPara->hPara,OutputPro.pOrigenBuf,OutputPro.pDecodeBuf,pPRO->nParaOffset,pPRO->nParaLen,pPRO->nParaNum,0,1);
+	OutputPro.Len=(result>0)?(result&0xffff):0;
+	OutputPro.ValidFlag=(result<0)?result : NO_ERR;
+	return OutputPro;
+}
+
+//============================================================================
+/// Function: GeneralBinProDecode
+/// 从二进制协议中进行解码
+/// writer and date : wangchao 20140707
+//============================================================================
+GeneralPro_output GeneralBinProDecode(GeneralPro_BUF* pPRO, GeneralMsgPara* pMsgPara)
+{
+	u2 tempLen;
+	i4 result;	
+	GeneralPro_output OutputPro;
+	//利用原始数据buff后面的地址(最大不能超过8192)
+	OutputPro.MsgID=pMsgPara->MsgID;
+	OutputPro.hPara=pMsgPara->hPara;
+	OutputPro.pOrigenBuf=pPRO->nBuf;
+	if(pMsgPara->DecodeFlag)
+	{
+		tempLen=pPRO->nOffset+4; 
+		tempLen-=tempLen%4;	
+		OutputPro.pDecodeBuf=&pPRO->nBuf[tempLen];
+		result=GeneralParaTraversal(pMsgPara->hPara,OutputPro.pOrigenBuf,OutputPro.pDecodeBuf,0,0);	
+		OutputPro.Len=(result>0)?result:0;
+		OutputPro.ValidFlag=(result<0)?result:NO_ERR;
+	}
+	else
+	{
+		OutputPro.ValidFlag=NO_ERR;
+		OutputPro.pDecodeBuf=pPRO->nBuf;
+		OutputPro.Len=pPRO->nLEN;
+	}
+	return OutputPro;
+}
+
+
+
+//============================================================================
+/// Function: GeneralPara_CalPara
+/// 从数据结构体中计算参数的位置以及实际的数组大小
+/// writer and date : wangchao 20160607
+//============================================================================
+
+i4 GeneralPara_CalPara(u1* pBuf, GeneralPara* pPara ,u1 BitOffset)
+{
+	u1 bitFlag;
+	u1 err;
+	u1 i;
+	u1 j;	
+	u2 tempLenCalNum; //当长度不确定时计算长度的次数
+	u4 CurrentBitOffset;//统一用bit算
+	i4 tempLen1=0;
+	i4 tempLen2=0;
+	i4 tempGroupNum;
+	u4 actualGroupNum;
+	GeneralPara* pSubPara;
+	CurrentBitOffset=0;
+	for(i=0;i<pPara->SubParaNum;i++)
+	{
+		pSubPara=pPara->hSubPara+i;
+		bitFlag=(pSubPara->Format==BM||pSubPara->Format==BE||pSubPara->Format==UB)?1:0;
+		pSubPara->Offset=(bitFlag)?CurrentBitOffset : (CurrentBitOffset>>3);		
+ 		if(pSubPara->GroupNum<0)
+		{
+			tempGroupNum=-pSubPara->GroupNum;
+			tempLen1=0;
+			err=GetRawDataInBinPro(pPara,pBuf,(u1*)&actualGroupNum,(u2*)&tempGroupNum,(u2*)&tempLen1,1,BitOffset,sizeof(actualGroupNum));
+			if(err){return err;}
+		}
+		else
+		{actualGroupNum=pSubPara->GroupNum;}
+		
+		if(pSubPara->SubParaNum)
+		{//如果有子参数则递归查找
+			tempLen1=0;
+			if(pSubPara->Len==0)
+			{ //当数据为内部元素不定长数组时 Len=0
+				tempLenCalNum=actualGroupNum;
+				pSubPara->UcertainIndex=GetUncertainIndex(actualGroupNum);	
+			}
+			else
+			{
+				tempLenCalNum=1;
+				pSubPara->UcertainIndex=0; 						
+			}
+			for(j=0;j<tempLenCalNum;j++)
+			{
+				if(pSubPara->Len==0)
+				{SetUncertainOffset(pSubPara->UcertainIndex+j,tempLen1);}			
+				tempLen2=(GeneralPara_CalPara(pBuf+(CurrentBitOffset>>3),pSubPara,(u1)(CurrentBitOffset&0x7)));
+				if(tempLen2<0){return tempLen2;}//数据小于0数模计算出错，返回错误代码的负值
+				tempLen1+=tempLen2;
+				
+			}
+		}
+		tempLen2=pSubPara->Len*actualGroupNum;
+		tempLen2=(bitFlag)?tempLen2:tempLen2<<3;
+		tempLen1=(pSubPara->Len==0)?tempLen1 : tempLen2;
+		pSubPara->actualGroupNum=actualGroupNum;
+		CurrentBitOffset+=tempLen1;
+	}
+	return CurrentBitOffset;
+}
+
+
+u1 GeneralProFunc(u4 COM,GeneralPro_BUF* pPRO, GeneralPro_Para* pDecodePara)
+{
+	GeneralPro_output outputPara;
+	GeneralMsgPara*  pMsgPara;
+	i4     result=0;
+	u1     Fomart;
+	u2     Bitoffset;
+	u4     MsgID;
+	if(pDecodePara->FrmMode)
+	{//Ascii模式处理
+		result=GeneralASCIIProGetPara(pPRO,pDecodePara);
+	}
+	if(pDecodePara->MsgIDMode==FIX_MSGID_MODE)
+	{MsgID=pDecodePara->FixMsgID;}
+	else if(pDecodePara->FrmMode)//ASCII码模式
+	{
+		GetSrtEnum(pPRO->nBuf+pPRO->nParaOffset[pDecodePara->MsgIDFirstIndex],pPRO->nParaLen[pDecodePara->MsgIDFirstIndex],(i4*)&MsgID);
+	}
+	else//二进制模式
+	{
+		Fomart=(pDecodePara->MsgIDMode==MSGID_INFRMBIT_MODE)? UB : U4;
+		Bitoffset=(Fomart==UB)?(pDecodePara->MsgIDFirstIndex):(pDecodePara->MsgIDFirstIndex<<3); 
+		GetDataInBinPro_simple(pPRO->nBuf,(u1*)&MsgID,Bitoffset,pDecodePara->MsgIDLen,sizeof(MsgID),Fomart,pDecodePara->FrmEndianMode);
+	}
+	pMsgPara=GetParaByMsgTBL(MsgID);	
+	if(pMsgPara&&pMsgPara->pFUNC)
+	{
+		m_currentUncertainParaIndex=0;	
+		if(pDecodePara->FrmMode)
+		{
+			outputPara=GeneralAsciiProDecode(pPRO,pMsgPara);
+		}
+		else 
+		{
+			if(pMsgPara->hPara->Len==0)
+			{//二进制模式处理
+				GeneralPara_CalPara(pPRO->nBuf,pMsgPara->hPara,0);						
+			}
+			outputPara=GeneralBinProDecode(pPRO,pMsgPara);	
+		}
+		result=(*pMsgPara->pFUNC)(COM,pMsgPara->EPara,&outputPara);
+	}
+	return result;
+}
+
+
+//============================================================================
+/// Function: GeneralFrameVerifyFunc
+/// 二进制通用校验程序
+//  包括 CRC8 CRC16 CRC24 CRC32 XOR SUM等功能
+/// writer and date : wangchao 20160607
+//============================================================================
+
+u1  GeneralFrameVerifyFunc(u4 COM,GeneralPro_BUF* pPRO,GeneralPro_Para* pDecodePara)
+{
+	u2 	  LEN=pPRO->nLEN-pDecodePara->CheckFisrtIndex;
+	u4    CalCRC=0;
+	u4    CRCData=0;	
+	u1*   tempBuf=pPRO->nBuf+pDecodePara->CheckFisrtIndex;
+	
+    switch(pDecodePara->CheckMode)
+    {
+    	case CHK_CRC8:
+			CalCRC=CRC8(tempBuf,LEN,0);
+		break;    
+    	case CHK_CRC16:
+			CalCRC=CRC16(tempBuf,LEN-2,0);	
+			CRCData=(pDecodePara->FrmEndianMode==FRMENDIAN_BIGEND)?(tempBuf[LEN-2]<<8)|(tempBuf[LEN-1]):(tempBuf[LEN-1]<<8)|(tempBuf[LEN-2]);
+			CalCRC-=CRCData;
+		break;  
+    	case CHK_CRC24:
+			CalCRC=CRC24(tempBuf,LEN-3,0);	
+			CRCData=(pDecodePara->FrmEndianMode==FRMENDIAN_BIGEND)?(tempBuf[LEN-3]<<16)|(tempBuf[LEN-2]<<8)|(tempBuf[LEN-1]):(tempBuf[LEN-1]<<16)|(tempBuf[LEN-2]<<8)|(tempBuf[LEN-3]);			
+			CalCRC-=CRCData;
+		break;  
+    	case CHK_CRC32:
+			CalCRC=CRC32(tempBuf,LEN,0);			
+		break;  
+    	case CHK_XOR:
+			while(LEN--)
+			{CalCRC^=*tempBuf++;}
+		break;  
+    	case CHK_SUM:
+			while(1==LEN--)
+			{CalCRC+=*tempBuf++;}
+			CalCRC-=*tempBuf;
+		break; 
+	    case CHK_XOR_ASCII:
+			while(pDecodePara->CheckFlag!=*tempBuf&&LEN--)
+			{CalCRC^=*tempBuf++;}
+			if(pDecodePara->CheckFlag==*tempBuf){tempBuf++;}
+			CalCRC-=Char2Hex(*tempBuf++)<<4;
+			CalCRC-=Char2Hex(*tempBuf);
+		break; 	
+    	case CHK_NOCHK:
+		default:
+			CalCRC=0;
+		break;
+			
+    }
+	if(CalCRC)
+	{
+	  //校验错误退出
+	    return false;
+	}
+	if(GeneralProFunc(COM, pPRO, pDecodePara))
+	{
+	   return true;
+	}
+	else
+	{return false;}
+}
+
+
+
+
+
+
+void GeneralProRxCHAR(u4 COM ,u1 RxBYTE, GeneralPro_Para* pDecodePara)
+{
+	GeneralPro_BUF* pPRO;
+	u1 tmp;
+	if(pDecodePara==(GeneralPro_Para*)null||COM>=MaxComNum)
+	{
+		return;
+	}
+	
+	pPRO = pDecodePara->hPro[COM];
+	//判断缓冲区是否为空
+	if(pPRO ==(GeneralPro_BUF*)null)
+	{
+		if(!(RxBYTE == pDecodePara->FrmHead[0]||(pDecodePara->FrmMode==2&&IsCharVaild(RxBYTE))))
+		{
+			return;
+		}
+#ifdef SYSTEM_PC
+		pPRO= (GeneralPro_BUF*)malloc(sizeof(GeneralPro_BUF));
+#else
+		pPRO=(GeneralPro_BUF*)sysmem_get(sizeof(GeneralPro_BUF));
+#endif
+		if(pPRO == (GeneralPro_BUF*)null)
+		{
+			return;
+		}
+		memset(pPRO,0,sizeof(GeneralPro_BUF));		
+		pPRO->nOffset = 0;
+		if(pDecodePara->FrmMode==1||pDecodePara->FrmMode==2)
+		{
+			pPRO->FrmTailEndFlag=1;
+			pPRO->LenVaildFlag=0;
+			pPRO->nLEN=0;
+			pPRO->FrmTailCnt=0;
+		}
+		else if(pDecodePara->FrmLenMode==FIX_FRMLEN_MODE)
+		{
+			pPRO->FrmTailEndFlag=0;
+			pPRO->LenVaildFlag=1;
+			pPRO->nLEN = pDecodePara->FixFrmLen+pDecodePara->ExtFrmLen; 
+			pPRO->FrmTailCnt=0;
+		}
+		else
+		{
+			pPRO->FrmTailEndFlag=0;
+			pPRO->LenVaildFlag=0;
+			pPRO->nLEN = pDecodePara->ExtFrmLen; 	
+			pPRO->FrmTailCnt=0;
+		}
+		pDecodePara->hPro[COM] = pPRO;		
+	}
+    	pPRO->nBuf[pPRO->nOffset++]=RxBYTE;
+		//判断帧尾字符
+		if(pPRO->FrmTailEndFlag&&RxBYTE==pDecodePara->FrmTail[pPRO->FrmTailCnt])
+		{
+			pPRO->FrmTailCnt++;
+		}
+		else
+		{
+			pPRO->FrmTailCnt=0;
+		}
+	  //判断帧头字符
+	    if((pPRO->nOffset<=pDecodePara->FrmHeadLen&&RxBYTE != pDecodePara->FrmHead[pPRO->nOffset-1]))
+	    {
+#ifdef SYSTEM_PC
+			free(pPRO);
+#else
+			sysmem_put((void* )pPRO);
+#endif	    	
+			pDecodePara->hPro[COM] = (GeneralPro_BUF*)null;     
+			return;
+	    }
+		else if(pDecodePara->FrmLenMode!=FIX_FRMLEN_MODE&&!pPRO->FrmTailEndFlag&&pPRO->nOffset>pDecodePara->FrmLenFirstIndex&&pPRO->nOffset<=pDecodePara->FrmLenFirstIndex+pDecodePara->FrmLenLen)
+		{//处理帧长度		  
+			if(pDecodePara->FrmEndianMode==FRMENDIAN_BIGEND)
+			 {
+			 	tmp=pDecodePara->FrmLenFirstIndex+pDecodePara->FrmLenLen-pPRO->nOffset;
+			 }	
+			else
+			 {
+			 	tmp=pPRO->nOffset-pDecodePara->FrmLenFirstIndex-1;
+			 }
+				pPRO->nLEN+=RxBYTE<<(tmp*8);
+				if(pPRO->nOffset==pDecodePara->FrmLenFirstIndex+pDecodePara->FrmLenLen)
+				{
+					pPRO->LenVaildFlag=1;
+				}
+		}		
+		else if((pPRO->LenVaildFlag==1&&pPRO->nOffset==pPRO->nLEN)||(pPRO->FrmTailEndFlag==1&&pPRO->FrmTailCnt==pDecodePara->FrmTailLen))
+		{
+            //接收完毕执行应用层函数
+            if(pPRO->FrmTailEndFlag){pPRO->nLEN=pPRO->nOffset;}//针对帧位结束方式，使len=offset
+			pDecodePara->hPro[COM] = (GeneralPro_BUF*)null; 
+		    GeneralFrameVerifyFunc(COM,pPRO,pDecodePara);
+#ifdef SYSTEM_PC
+			free(pPRO);
+#else
+			sysmem_put((void* )pPRO);
+#endif	
+		}
+		else if(pPRO->nOffset>=MaxFrmLen||(pPRO->LenVaildFlag&&pPRO->nOffset>pPRO->nLEN))
+		{	//超长度报错
+			pDecodePara->hPro[COM] = (GeneralPro_BUF*)null; 
+#ifdef SYSTEM_PC
+			free(pPRO);
+#else
+			sysmem_put((void* )pPRO);
+#endif	
+		}
+}
+
+
+
+void GeneralProInit(void)
+{
+//	memset(m_hGeneralPro,0,sizeof(m_hGeneralPro));
+	memset(m_ParaList,0,sizeof(m_ParaList));
+	memset(m_UncertainParaOffset,0,sizeof(m_UncertainParaOffset));	
+	memset(m_ParaOffsetIndexGroup,0,sizeof(m_ParaOffsetIndexGroup));	
+	memset(m_ParaGroupIndexGroup,0,sizeof(m_ParaGroupIndexGroup));	
+	InitHashTbl(&m_MsgHashTbl,(u1*)m_ProMsgParaGroup,sizeof(GeneralMsgPara),MaxProMsgNum,sizeof(u4),offsetof(GeneralMsgPara,MsgID));
+	InitHashTbl(&m_AsciiParaHashTbl,(u1*)m_AsciiParaGroup,sizeof(GeneralAsciiParaTBL),MaxParaGroupNum,0,offsetof(GeneralAsciiParaTBL,BYTE));
+
+	m_currentParaIndex=0;
+	m_currentUncertainParaIndex=0;
+	m_currentParaOffsetAndGroupIndex=0;
+	
+}
+
+//GeneralProPostInit 用于初始化完成所有数据后进行后初始化
+void GeneralProPostInit(void)
+{
+	u4 i;
+	GeneralPara* pPara;
+	for(i=0;i<m_currentParaIndex;i++)
+	{
+		pPara=m_ParaList+i;
+		if(pPara->hMaterPara==null&&pPara->Len!=0)
+		{
+			GeneralPara_CalPara(null,pPara,0);
+		}
+	}
+}
+
